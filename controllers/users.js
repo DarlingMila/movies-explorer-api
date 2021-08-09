@@ -6,6 +6,7 @@ const User = require('../models/user');
 const BadRequestError = require('../errors/bad-request-error');
 const UnauthorizedError = require('../errors/unauthorized-error');
 const ConflictError = require('../errors/conflict-error');
+const InternalServerError = require('../errors/internal-server-error');
 
 const { SALT, NODE_ENV, JWT_KEY } = process.env;
 
@@ -24,11 +25,17 @@ const createUser = (req, res, next) => {
         name,
       })
         .then((user) => {
-          res.status(200).send({ user });
+          res.send({
+            email: user.email,
+            name: user.name,
+            _id: user._id,
+          });
         })
         .catch((err) => {
           if (err.name === 'MongoError' && err.code === 11000) {
             next(new ConflictError('Пользователь с данной почтой уже существует'));
+          } else {
+            next(err);
           }
         });
     });
@@ -43,7 +50,7 @@ const login = (req, res, next) => {
   User.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        throw new UnauthorizedError('Пользователь с данной почтой не найден');
+        throw new UnauthorizedError('Необходима авторизация');
       }
 
       return bcrypt.compare(password, user.password, ((error, isValid) => {
@@ -61,7 +68,7 @@ const login = (req, res, next) => {
           { expiresIn: '7d' },
         );
 
-        return res.status(200).send({
+        return res.send({
           message: 'Вход выполнен',
           token,
         });
@@ -73,7 +80,7 @@ const login = (req, res, next) => {
 const getUserInfo = (req, res, next) => {
   User.findById(req.user._id)
     .then((user) => {
-      res.status(200).send({
+      res.send({
         email: user.email,
         name: user.name,
       });
@@ -89,22 +96,30 @@ const updateUserInfo = (req, res, next) => {
     name,
   } = req.body;
 
-  User.findByIdAndUpdate(
-    userId,
-    {
-      email,
-      name,
-    },
-    {
-      new: true,
-      runValidators: true,
-      upsert: true,
-    },
-  )
-    .then((user) => res.status(200).send({
-      email: user.email,
-      name: user.name,
-    }))
+  User.findById(userId)
+    .then((user) => {
+      if (userId !== String(user._id)) {
+        throw new InternalServerError('Запрос не может быть выполнен');
+      } else {
+        User.findByIdAndUpdate(
+          userId,
+          {
+            email,
+            name,
+          },
+          {
+            new: true,
+            runValidators: true,
+            upsert: true,
+          },
+        )
+          .then((newUser) => res.send({
+            email: newUser.email,
+            name: newUser.name,
+          }))
+          .catch(next);
+      }
+    })
     .catch(next);
 };
 

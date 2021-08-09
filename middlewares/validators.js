@@ -11,15 +11,6 @@ const emailValidation = (value) => {
   }
 };
 
-const nameValidation = (value) => {
-  const result = /[А-ЯЁ][а-яё]+/.test(value);
-  if (!result) {
-    throw new BadRequestError('Имя должно быть на русском и начинаться с большой буквы');
-  } else {
-    return value;
-  }
-};
-
 const urlValidation = (value) => {
   const result = validator.isURL(value);
   if (!result) {
@@ -58,8 +49,7 @@ const createUserValidation = celebrate({
       .messages({
         'string.empty': 'Введить пароль',
       }),
-    name: Joi.string().min(2).max(30)
-      .custom(nameValidation)
+    name: Joi.string().min(2).max(30).required()
       .messages({
         'string.min': 'Имя не должно быть короче 2-х символов',
         'string.max': 'Имя не должно быть длиннее 30-и символов',
@@ -89,8 +79,7 @@ const updateUserInfoValidation = celebrate({
       .messages({
         'string.empty': 'Поле "email" должно быть заполнено',
       }),
-    name: Joi.string().min(2).max(30)
-      .custom(nameValidation)
+    name: Joi.string().min(2).max(30).required()
       .messages({
         'string.min': 'Имя не должно быть короче 2-х символов',
         'string.max': 'Имя не должно быть длиннее 30-и символов',
@@ -125,7 +114,7 @@ const createMovieValidation = celebrate({
     thumbnail: Joi.string().required().custom(urlValidation).messages({
       'string.empty': 'Поле должно быть заполнено',
     }),
-    movieId: Joi.string().required().messages({
+    movieId: Joi.number().required().messages({
       'string.empty': 'Поле должно быть заполнено',
     }),
     nameRU: Joi.string().required().custom(ruLangValidation).messages({
@@ -139,7 +128,7 @@ const createMovieValidation = celebrate({
 
 const deleteMovieValidation = celebrate({
   params: Joi.object().keys({
-    movieId: Joi.string().length(24).hex(),
+    movieId: Joi.string().length(24).hex().required(),
   }).unknown(true),
 });
 

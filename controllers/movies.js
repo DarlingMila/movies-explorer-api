@@ -6,7 +6,7 @@ const ForbiddenError = require('../errors/forbidden-error');
 const getMovies = (req, res, next) => {
   Movie.find({})
     .then((movies) => {
-      res.status(200).send(movies);
+      res.send(movies);
     })
     .catch(next);
 };
@@ -42,7 +42,7 @@ const createMovie = (req, res, next) => {
     nameEN,
   })
     .then((movie) => {
-      res.status(200).send({
+      res.send({
         movie: movie.toJSON(),
       });
     })
@@ -52,7 +52,7 @@ const createMovie = (req, res, next) => {
 const deleteMovie = (req, res, next) => {
   const { movieId } = req.params;
 
-  return Movie.findByIdAndRemove(movieId)
+  return Movie.findById(movieId)
     .then((movie) => {
       if (!movie) {
         throw new NotFoundError('Фильм не найден');
@@ -62,9 +62,13 @@ const deleteMovie = (req, res, next) => {
         throw new ForbiddenError('Вы не можете удалить фильм');
       }
 
-      return res.status(200).send({
-        message: 'Фильм удален',
-      });
+      return Movie.findByIdAndRemove(movieId)
+        .then(() => {
+          res.send({
+            message: 'Фильм удален',
+          });
+        })
+        .catch(next);
     })
     .catch(next);
 };
