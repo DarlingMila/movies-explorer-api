@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
+const cors = require('cors');
 const { errors } = require('celebrate');
 
 dotenv.config();
@@ -17,6 +18,16 @@ mongoose.connect(MONGO_URL, {
 });
 
 const app = express();
+
+// app.use(cors({
+//   origin: 'http://localhost:3000',
+//   credentials: true,
+// }));
+
+app.use(cors({
+  origin: 'http://movies-world.nomoredomains.monster',
+  credentials: true,
+}));
 
 const { requestLogger, errorLogger } = require('./middlewares/logger');
 const router = require('./routes/index');
